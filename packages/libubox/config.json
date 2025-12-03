@@ -1,0 +1,9 @@
+{
+  "version": "latest",
+  "repo": "https://git.openwrt.org/project/libubox.git",
+  "hash": "master",
+  "options": {
+    "shared": false
+  }
+}
+

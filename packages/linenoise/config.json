@@ -1,0 +1,9 @@
+{
+  "version": "latest",
+  "repo": "https://github.com/antirez/linenoise.git",
+  "hash": "master",
+  "options": {
+    "shared": false
+  }
+}
+

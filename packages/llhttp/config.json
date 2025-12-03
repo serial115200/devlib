@@ -1,0 +1,9 @@
+{
+  "version": "8.1.0",
+  "repo": "https://github.com/nodejs/llhttp.git",
+  "hash": "release/v8.1.0",
+  "options": {
+    "shared": false
+  }
+}
+

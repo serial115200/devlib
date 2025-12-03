@@ -1,0 +1,9 @@
+{
+  "version": "0.18",
+  "repo": "https://github.com/json-c/json-c.git",
+  "hash": "json-c-0.18",
+  "options": {
+    "shared": false
+  }
+}
+
