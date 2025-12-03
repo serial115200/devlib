@@ -24,7 +24,7 @@ if(ENABLE_JSON_C)
         GIT_REPOSITORY ${JSON_C_GIT_REPOSITORY}
         GIT_TAG ${JSON_C_GIT_TAG}
         OPTIONS
-            "BUILD_SHARED_LIBS OFF"
+            "BUILD_SHARED_LIBS ON"
             "BUILD_TESTING OFF"
             "DISABLE_WERROR ON"
     )

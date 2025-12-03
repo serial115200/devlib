@@ -19,7 +19,7 @@ if(ENABLE_LIBUBOX)
     endif()
 
     set(LIBUBOX_OPTIONS
-        "BUILD_SHARED_LIBS OFF"
+        "BUILD_SHARED_LIBS ON"
         "BUILD_LUA OFF"
         "BUILD_EXAMPLES OFF"
     )

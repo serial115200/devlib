@@ -1,4 +1,3 @@
-#include "http_server.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,22 +6,19 @@
 #include <errno.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <libubox/utils.h>
+#include "http_server.h"
 
-// container_of 宏定义
-#ifndef container_of
-#define container_of(ptr, type, member) \
-    ((type *)((char *)(ptr) - offsetof(type, member)))
-#endif
-
-// HTTP 解析回调函数
-static int on_url(llhttp_t *parser, const char *at, size_t length) {
-    struct http_connection *conn = (struct http_connection *)parser->data;
-    // 可以在这里解析 URL
+static int on_url(llhttp_t *parser, const char *at, size_t length) 
+{
+    struct http_conn *conn = (struct http_conn *)parser->data;
+    conn->request_path = strndup(at, length);
     return 0;
 }
 
-static int on_body(llhttp_t *parser, const char *at, size_t length) {
-    struct http_connection *conn = (struct http_connection *)parser->data;
+static int on_body(llhttp_t *parser, const char *at, size_t length) 
+{
+    struct http_conn *conn = (struct http_conn *)parser->data;
     
     // 分配内存存储请求体
     if (!conn->request_body) {
@@ -40,7 +36,7 @@ static int on_body(llhttp_t *parser, const char *at, size_t length) {
 }
 
 static int on_message_complete(llhttp_t *parser) {
-    struct http_connection *conn = (struct http_connection *)parser->data;
+    struct http_conn *conn = (struct http_conn *)parser->data;
     
     // 处理 JSON 请求
     if (conn->request_body && conn->request_body_len > 0) {
@@ -97,14 +93,14 @@ static int on_message_complete(llhttp_t *parser) {
     return 0;
 }
 
-// 流数据接收回调
-static void stream_notify_read(struct ustream *s, int bytes) {
-    struct http_connection *conn = container_of(s, struct http_connection, s.stream);
+static void stream_notify_read(struct ustream *s, int bytes) 
+{
+    struct http_conn *conn = container_of(s, struct http_conn, s.stream);
     char *data;
     int len;
     
-    while ((data = ustream_get_read_buf(s, &len)) != NULL && len > 0) {
-        // 解析 HTTP
+    while ((data = ustream_get_read_buf(s, &len)) != NULL && len > 0) 
+    {
         enum llhttp_errno err = llhttp_execute(&conn->parser, data, len);
         if (err != HPE_OK) {
             fprintf(stderr, "HTTP parse error: %s\n", llhttp_errno_name(err));
@@ -116,12 +112,15 @@ static void stream_notify_read(struct ustream *s, int bytes) {
 }
 
 static void stream_notify_state(struct ustream *s) {
-    struct http_connection *conn = container_of(s, struct http_connection, s.stream);
+    struct http_conn *conn = container_of(s, struct http_conn, s.stream);
     
     if (!s->eof && !s->write_error)
         return;
     
-    // 连接关闭，清理资源
+    if (conn->request_path) {
+        free(conn->request_path);
+        conn->request_path = NULL;
+    }
     if (conn->request_body) {
         free(conn->request_body);
         conn->request_body = NULL;
@@ -140,7 +139,7 @@ static void stream_notify_state(struct ustream *s) {
 // 接受新连接
 static void server_cb(struct uloop_fd *fd, unsigned int events) {
     struct http_server *server = container_of(fd, struct http_server, server_fd);
-    struct sockaddr_in client_addr;
+    struct sockaddr_storage client_addr; 
     socklen_t client_len = sizeof(client_addr);
     int client_fd;
     
@@ -151,7 +150,7 @@ static void server_cb(struct uloop_fd *fd, unsigned int events) {
     }
     
     // 创建连接结构
-    struct http_connection *conn = calloc(1, sizeof(*conn));
+    struct http_conn *conn = calloc(1, sizeof(*conn));
     if (!conn) {
         close(client_fd);
         return;
@@ -172,25 +171,17 @@ static void server_cb(struct uloop_fd *fd, unsigned int events) {
     conn->s.stream.notify_state = stream_notify_state;
 }
 
-int http_server_init(struct http_server *server, int port) {
-    int fd;
-    const char *port_str;
-    
-    memset(server, 0, sizeof(*server));
-    server->port = port;
-
-    port_str = usock_port(port);
-    fd = usock(USOCK_TCP | USOCK_SERVER | USOCK_NONBLOCK, NULL, port_str);
-    
+int http_server_init(struct http_server *server) 
+{
+    int fd = usock_inet(server->type, server->host, server->service, &server->addr);
     if (fd < 0) {
-        perror("usock");
+        perror("usock_inet");
         return -1;
     }
     
     server->server_fd.fd = fd;
     server->server_fd.cb = server_cb;
     uloop_fd_add(&server->server_fd, ULOOP_READ);
-    
     return 0;
 }
 
@@ -201,10 +192,3 @@ void http_server_cleanup(struct http_server *server) {
         server->server_fd.fd = -1;
     }
 }
-
-int http_server_start(struct http_server *server) {
-    printf("HTTP JSON Server listening on port %d\n", server->port);
-    uloop_run();
-    return 0;
-}
-
