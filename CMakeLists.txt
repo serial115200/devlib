@@ -14,19 +14,16 @@ message(STATUS "Packages will be installed to: ${CMAKE_INSTALL_PREFIX}")
 set(DEVLIB_DOWNLOAD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/download")
 get_filename_component(DEVLIB_DOWNLOAD_DIR "${DEVLIB_DOWNLOAD_DIR}" ABSOLUTE)
 
-# 包含 CPM - 优先使用本地文件，如果不存在则自动下载
+# 统一 CPM 源缓存目录，避免每个包单独指定 SOURCE_DIR
+set(CPM_SOURCE_CACHE "${DEVLIB_DOWNLOAD_DIR}")
+
 set(CPM_LOCAL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CPM.cmake")
 if(EXISTS "${CPM_LOCAL_FILE}")
-    message(STATUS "使用本地 CPM.cmake: ${CPM_LOCAL_FILE}")
     include(${CPM_LOCAL_FILE})
 else()
-    message(STATUS "本地 CPM.cmake 不存在，尝试自动下载...")
-    # 如果本地文件不存在，可以在这里添加自动下载逻辑
-    # 或者提示用户下载
     message(FATAL_ERROR "未找到 CPM.cmake，请确保 cmake/CPM.cmake 文件存在")
 endif()
 
-# 包含包启用配置（统一管理所有包的启用选项）
 include(config/packages.cmake)
 
 # 包含包配置
@@ -35,5 +32,7 @@ include(packages/libubox/package.cmake)
 include(packages/llhttp/package.cmake)
 include(packages/linenoise/package.cmake)
 
-# 添加 userver 服务（第一个功能：HTTP JSON 服务）
-add_subdirectory(userver)
+option(BUILD_USERVER "Build userver service" ON)
+if(BUILD_USERVER)
+    add_subdirectory(userver)
+endif()

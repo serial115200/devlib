@@ -49,33 +49,33 @@ if ! command -v cmake &> /dev/null; then
 fi
 
 # 创建构建目录和 rootfs 目录
-BUILD_DIR="build"
+BUILD_PKGS_DIR="build_pkgs"
+BUILD_APP_DIR="build_app"
 ROOTFS_DIR="rootfs"
-mkdir -p ${BUILD_DIR}
+mkdir -p ${BUILD_PKGS_DIR}
+mkdir -p ${BUILD_APP_DIR}
 mkdir -p ${ROOTFS_DIR}/usr
 
-# 配置 CMake
-# 包的启用状态通过 CMake 选项控制（config/packages.cmake）
-# 可以通过 -D 参数覆盖，例如: -DENABLE_JSON_C=OFF
-echo -e "${GREEN}配置 CMake...${NC}"
-cd ${BUILD_DIR}
-cmake .. -DCMAKE_INSTALL_PREFIX=../${ROOTFS_DIR}/usr
-
-# 构建
-echo -e "${GREEN}构建项目...${NC}"
+# 阶段 1：仅构建并安装 packages 到 rootfs
+echo -e "${GREEN}阶段 1：构建并安装 packages 到 rootfs...${NC}"
+pushd ${BUILD_PKGS_DIR} >/dev/null
+cmake .. -DCMAKE_INSTALL_PREFIX=../${ROOTFS_DIR}/usr -DBUILD_USERVER=OFF
 cmake --build . --config Release
-
-# 安装到 rootfs
-echo -e "${GREEN}安装包到 rootfs 目录...${NC}"
 cmake --install .
+popd >/dev/null
 
-cd ..
+# 阶段 2：构建应用（示例：userver），可选择禁用 packages，直接使用 rootfs
+echo -e "${GREEN}阶段 2：构建应用，使用已安装的 rootfs 依赖...${NC}"
+pushd ${BUILD_APP_DIR} >/dev/null
+cmake .. -DCMAKE_INSTALL_PREFIX=../${ROOTFS_DIR}/usr -DBUILD_USERVER=ON -DENABLE_JSON_C=OFF -DENABLE_LIBUBOX=OFF -DENABLE_LLHTTP=OFF -DENABLE_LINENOISE=OFF
+cmake --build . --config Release
+cmake --install .
+popd >/dev/null
 
-echo -e "${GREEN}构建完成！包已安装到 ${ROOTFS_DIR}/usr 目录${NC}"
+echo -e "${GREEN}构建完成！包与应用已安装到 ${ROOTFS_DIR}/usr 目录${NC}"
 echo -e "${GREEN}rootfs 目录结构:${NC}"
 if command -v tree &> /dev/null; then
     tree -L 3 ${ROOTFS_DIR} 2>/dev/null || ls -R ${ROOTFS_DIR}
 else
     find ${ROOTFS_DIR} -type f 2>/dev/null | head -20 || ls -R ${ROOTFS_DIR}
 fi
-
