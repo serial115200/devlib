@@ -20,9 +20,8 @@ struct http_conn {
     struct ustream_fd s;
     llhttp_t parser;
     llhttp_settings_t settings;
-    char *request_path;
-    char *request_body;
-    size_t request_body_len;
+    json_tokener *json_tok;       // JSON 流式解析器
+    json_object *request_json;    // 解析后的 JSON 对象
     int status_code;
     char *response_body;
     size_t response_body_len;
