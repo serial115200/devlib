@@ -1,0 +1,8 @@
+{
+  "name": "ustream-ssl",
+  "version": "latest",
+  "repo": "https://git.openwrt.org/project/ustream-ssl.git",
+  "hash": "master",
+  "description": "OpenWrt SSL library wrapper for ustream"
+}
+

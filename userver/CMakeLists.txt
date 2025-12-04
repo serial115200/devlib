@@ -8,7 +8,9 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/DevlibRootfs.cmake)
 
 add_executable(userver
     src/main.c
-    src/http_server.c
+    src/http.c
+    src/http_json.c
+    src/http_form.c
 )
 
 set(ROOTFS_INC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../rootfs/usr/include")
@@ -23,6 +25,9 @@ target_link_libraries(userver
     ${ROOTFS_LIB_DIR}/libubox.a
     ${ROOTFS_LIB_DIR}/libllhttp.a
     ${ROOTFS_LIB_DIR}/libjson-c.a
+    ${ROOTFS_LIB_DIR}/libustream-ssl.so
+    ssl
+    crypto
 )
 
 if(UNIX)

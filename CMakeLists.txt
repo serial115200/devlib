@@ -30,6 +30,7 @@ include(packages/json-c/package.cmake)
 include(packages/libubox/package.cmake)
 include(packages/llhttp/package.cmake)
 include(packages/linenoise/package.cmake)
+include(packages/ustream-ssl/package.cmake)
 
 option(BUILD_USERVER "Build userver service" ON)
 if(BUILD_USERVER)
